@@ -23,7 +23,7 @@ const Notifier = {
             if (t > now && t <= in20) {
                 const mins = Math.round((t - now) / 60000);
                 const label = call.type === 'meetup' ? 'Meeting' : 'Call';
-                this.send(`⏰ ${label} in ${mins} min`, `${call.name} - ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+                this.send(`⏰ ${label} in ${mins} min`, `${call.name} - ${t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' })}`);
                 Store.updateCall(call.id, { notified20: true });
             }
         });

@@ -1,4 +1,5 @@
 /* ImsgDesk - UI Components */
+const TZ = 'America/New_York';
 const UI = {
     CATS: [
         { id: 'new', label: 'New', cls: 'pill-new' },
@@ -41,8 +42,8 @@ const UI = {
 
     callCard(c, role) {
         const dt = new Date(c.time);
-        const time = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const date = dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        const time = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+        const date = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ });
         const isPast = dt < new Date();
         const tags = c.tags.map(t => `<span class="tag">${this.esc(t)}</span>`).join('');
         return `
