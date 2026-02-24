@@ -183,7 +183,7 @@ const App = {
         document.getElementById('add-call-form').addEventListener('submit', e => {
             e.preventDefault();
             Store.addCall({ name: document.getElementById('call-name').value.trim(), number: document.getElementById('call-number').value.trim(), time: document.getElementById('call-time').value, type, note: document.getElementById('call-note').value.trim(), createdBy: this.role });
-            Notifier.notify(`New ${label.toLowerCase()} scheduled with ${document.getElementById('call-name').value.trim()}`);
+            Notifier.notify(`New ${label.toLowerCase()} scheduled with ${document.getElementById('call-name').value.trim()}`, this.role);
             this.closeModal();
             this.showToast(`${label} added!`, 'success');
         });
@@ -209,7 +209,7 @@ const App = {
             const data = { name: document.getElementById('ct-name').value.trim(), number: document.getElementById('ct-number').value.trim(), category: cat ? cat.dataset.cat : 'new', notes: document.getElementById('ct-notes').value.trim(), updatedBy: this.role };
             if (this.role === 'client' && document.getElementById('ct-client-notes')) data.clientNotes = document.getElementById('ct-client-notes').value.trim();
             if (existing) { Store.updateContact(editId, data); this.showToast('Contact updated!', 'success'); }
-            else { data.createdBy = this.role; Store.addContact(data); Notifier.notify(`New contact added: ${data.name}`); this.showToast('Contact added!', 'success'); }
+            else { data.createdBy = this.role; Store.addContact(data); Notifier.notify(`New contact added: ${data.name}`, this.role); this.showToast('Contact added!', 'success'); }
             this.closeModal();
         });
     },
@@ -243,7 +243,7 @@ const App = {
             const updates = { name: document.getElementById('ec-name').value.trim(), number: document.getElementById('ec-number').value.trim(), time: document.getElementById('ec-time').value, note: document.getElementById('ec-note').value.trim(), updatedBy: this.role };
             if (this.role === 'client' && document.getElementById('ec-cnotes')) updates.clientNotes = document.getElementById('ec-cnotes').value.trim();
             Store.updateCall(id, updates);
-            Notifier.notify(`${c.type === 'meetup' ? 'Meeting' : 'Call'} with ${updates.name} was updated`);
+            Notifier.notify(`${c.type === 'meetup' ? 'Meeting' : 'Call'} with ${updates.name} was updated`, this.role);
             this.closeModal();
             this.showToast('Updated!', 'success');
         });
@@ -273,7 +273,7 @@ const App = {
             if (tag && !c.tags.includes(tag)) {
                 c.tags.push(tag);
                 Store.updateContact(id, { tags: c.tags, updatedBy: this.role });
-                Notifier.notify(`Tag "${tag}" added to ${c.name}`);
+                Notifier.notify(`Tag "${tag}" added to ${c.name}`, this.role);
                 this.showToast('Tag added!', 'success');
             }
             this.closeModal();
@@ -301,7 +301,7 @@ const App = {
             e.preventDefault();
             const sel = document.querySelector('.color-swatch.selected');
             Store.addCategory({ name: document.getElementById('cat-name').value.trim(), color: sel ? sel.dataset.color : '#7C3AED' });
-            Notifier.notify(`New category created: ${document.getElementById('cat-name').value.trim()}`);
+            Notifier.notify(`New category created: ${document.getElementById('cat-name').value.trim()}`, this.role);
             this.closeModal();
             this.showToast('Category created!', 'success');
         });
