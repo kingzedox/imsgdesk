@@ -63,7 +63,8 @@ const UI = {
                 <div class="card-time">${this.timeAgo(c.updatedAt)}</div>
                 <div class="card-actions">
                     <button class="btn btn-sm btn-ghost" onclick="App.editContact('${c.id}')">Edit</button>
-                    ${role === 'client' ? `<button class="btn btn-sm btn-ghost" onclick="App.addTagToContact('${c.id}')">+ Tag</button>` : `<button class="btn btn-sm btn-danger" onclick="App.deleteContact('${c.id}')">Delete</button>`}
+                    <button class="btn btn-sm btn-ghost" onclick="App.addTagToContact('${c.id}')">+ Tag</button>
+                    <button class="btn btn-sm btn-danger" onclick="App.deleteContact('${c.id}')">Delete</button>
                 </div>
             </div>
         </div>`;
