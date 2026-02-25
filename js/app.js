@@ -16,28 +16,35 @@ const App = {
         // Check saved session
         const saved = localStorage.getItem('imsgdesk_session');
         if (saved) {
-            const s = JSON.parse(saved);
-            this.role = s.role;
-            this._showDashboard();
+            try {
+                const s = JSON.parse(saved);
+                this.role = s.role;
+                this._showDashboard();
+            } catch (e) {
+                localStorage.removeItem('imsgdesk_session');
+            }
         }
 
         // Login form
-        document.getElementById('login-form').addEventListener('submit', e => {
-            e.preventDefault();
-            const u = document.getElementById('username').value.trim().toLowerCase();
-            const p = document.getElementById('password').value;
-            const user = this.USERS[u];
-            if (user && user.password === p) {
-                this.role = user.role;
-                localStorage.setItem('imsgdesk_session', JSON.stringify({ role: user.role, name: user.name }));
-                document.getElementById('login-error').classList.add('hidden');
-                this._showDashboard();
-            } else {
-                const err = document.getElementById('login-error');
-                err.textContent = 'Invalid username or password';
-                err.classList.remove('hidden');
-            }
-        });
+        const lForm = document.getElementById('login-form');
+        if (lForm) {
+            lForm.addEventListener('submit', e => {
+                e.preventDefault();
+                const u = document.getElementById('username').value.trim().toLowerCase();
+                const p = document.getElementById('password').value;
+                const user = this.USERS[u];
+                if (user && user.password === p) {
+                    this.role = user.role;
+                    localStorage.setItem('imsgdesk_session', JSON.stringify({ role: user.role, name: user.name }));
+                    document.getElementById('login-error').classList.add('hidden');
+                    this._showDashboard();
+                } else {
+                    const err = document.getElementById('login-error');
+                    err.textContent = 'Invalid username or password';
+                    err.classList.remove('hidden');
+                }
+            });
+        }
 
         // Logout
         document.getElementById('logout-btn').addEventListener('click', () => {
@@ -72,7 +79,7 @@ const App = {
         document.addEventListener('click', e => {
             const panel = document.getElementById('notif-panel');
             const btn = document.getElementById('notif-btn');
-            if (!panel.classList.contains('hidden') && !panel.contains(e.target) && !btn.contains(e.target)) {
+            if (panel && !panel.classList.contains('hidden') && !panel.contains(e.target) && !btn.contains(e.target)) {
                 panel.classList.add('hidden');
             }
         });
@@ -286,17 +293,20 @@ const App = {
         const c = Store.getContact(id);
         if (!c) return;
         this.openModal('Add Tag', `
-            <div class="input-group"><label>Current Tags</label><div class="tags-row" style="min-height:24px">${c.tags.map(t => `<span class="tag">${UI.esc(t)} <span class="tag-remove" onclick="App._removeTag('${id}','${t}')">×</span></span>`).join('')}${c.tags.length === 0 ? '<span style="color:var(--text-sec);font-size:13px">No tags yet</span>' : ''}</div></div>
+            <div class="input-group"><label>Current Tags</label><div class="tags-row" style="min-height:24px">${(c.tags || []).map(t => `<span class="tag">${UI.esc(t)} <span class="tag-remove" onclick="App._removeTag('${id}','${t}')">×</span></span>`).join('')}${(!c.tags || c.tags.length === 0) ? '<span style="color:var(--text-sec);font-size:13px">No tags yet</span>' : ''}</div></div>
             <form id="tag-form"><div class="input-group"><label>New Tag</label><input type="text" id="new-tag" placeholder="e.g. VIP, Follow Up, Hot..." required></div><button type="submit" class="btn btn-primary btn-full">Add Tag</button></form>
         `);
         document.getElementById('tag-form').addEventListener('submit', e => {
             e.preventDefault();
             const tag = document.getElementById('new-tag').value.trim();
-            if (tag && !c.tags.includes(tag)) {
-                c.tags.push(tag);
-                Store.updateContact(id, { tags: c.tags, updatedBy: this.role });
-                Notifier.notify(`Tag "${tag}" added to ${c.name}`, this.role);
-                this.showToast('Tag added!', 'success');
+            if (tag) {
+                const tags = c.tags || [];
+                if (!tags.includes(tag)) {
+                    tags.push(tag);
+                    Store.updateContact(id, { tags: tags, updatedBy: this.role });
+                    Notifier.notify(`Tag "${tag}" added to ${c.name}`, this.role);
+                    this.showToast('Tag added!', 'success');
+                }
             }
             this.closeModal();
         });
@@ -305,7 +315,7 @@ const App = {
     _removeTag(contactId, tag) {
         const c = Store.getContact(contactId);
         if (!c) return;
-        c.tags = c.tags.filter(t => t !== tag);
+        c.tags = (c.tags || []).filter(t => t !== tag);
         Store.updateContact(contactId, { tags: c.tags, updatedBy: this.role });
         this.addTagToContact(contactId); // Re-render modal
     },
@@ -341,6 +351,7 @@ const App = {
     // === Toast ===
     showToast(msg, type) {
         const container = document.getElementById('toast-container');
+        if (!container) return;
         const toast = document.createElement('div');
         toast.className = `toast ${type || ''}`;
         toast.textContent = msg;
@@ -352,14 +363,17 @@ const App = {
     addNotification(msg) {
         this._notifications.unshift({ msg, time: new Date().toISOString(), read: false });
         const badge = document.getElementById('notif-badge');
-        const unread = this._notifications.filter(n => !n.read).length;
-        badge.textContent = unread;
-        badge.classList.toggle('hidden', unread === 0);
+        if (badge) {
+            const unread = this._notifications.filter(n => !n.read).length;
+            badge.textContent = unread;
+            badge.classList.toggle('hidden', unread === 0);
+        }
         this._renderNotifPanel();
     },
 
     _renderNotifPanel() {
         const list = document.getElementById('notif-list');
+        if (!list) return;
         if (this._notifications.length === 0) {
             list.innerHTML = '<div class="empty-state"><p>No notifications yet</p></div>';
         } else {

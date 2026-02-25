@@ -8,7 +8,7 @@ const Store = {
         firebase.database().ref('.info/connected').on('value', snap => {
             const isConnected = snap.val() === true;
             console.log('Firebase connection state:', isConnected ? 'CONNECTED ✅' : 'DISCONNECTED ❌');
-            App.setSyncStatus(isConnected);
+            if (window.App && App.setSyncStatus) App.setSyncStatus(isConnected);
         });
 
         firebase.database().ref('data').on('value', snap => {
@@ -20,7 +20,9 @@ const Store = {
                 customCategories: val.customCategories || {},
                 activity: val.activity || {}
             };
-            this._listeners.forEach(fn => fn());
+            this._listeners.forEach(fn => {
+                try { fn(); } catch (e) { console.error('Listener error:', e); }
+            });
         });
     },
 
@@ -66,7 +68,10 @@ const Store = {
         list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         if (filter) {
             if (filter.category) list = list.filter(c => c.category === filter.category);
-            if (filter.search) { const s = filter.search.toLowerCase(); list = list.filter(c => c.name.toLowerCase().includes(s) || (c.number && c.number.includes(s))); }
+            if (filter.search) {
+                const s = filter.search.toLowerCase();
+                list = list.filter(c => (c.name || '').toLowerCase().includes(s) || (c.number && c.number.includes(s)));
+            }
         }
         return list;
     },
@@ -110,7 +115,9 @@ const Store = {
 
     getCalls(filter) {
         let list = this._arr(this._data.calls);
-        list.sort((a, b) => new Date(a.time) - new Date(b.time));
+        list.sort((a, b) => {
+            try { return new Date(a.time) - new Date(b.time); } catch (e) { return 0; }
+        });
         if (filter) {
             if (filter.today) list = list.filter(c => DateUtils.isToday(c.time));
             if (filter.upcoming) list = list.filter(c => DateUtils.isUpcoming(c.time) && !c.completed);
@@ -149,7 +156,9 @@ const Store = {
 
     getActivity() {
         let list = this._arr(this._data.activity);
-        list.sort((a, b) => new Date(b.time) - new Date(a.time));
+        list.sort((a, b) => {
+            try { return new Date(b.time) - new Date(a.time); } catch (e) { return 0; }
+        });
         return list.slice(0, 50);
     },
 
@@ -160,11 +169,11 @@ const Store = {
         const todayCalls = calls.filter(c => DateUtils.isToday(c.time));
         return {
             totalContacts: contacts.length,
-            newContacts: contacts.filter(c => c.category === 'new').length,
+            newContacts: contacts.filter(c => (c.category || 'new') === 'new').length,
             todayCalls: todayCalls.length,
             completedToday: todayCalls.filter(c => c.completed).length,
             upcomingCalls: calls.filter(c => DateUtils.isUpcoming(c.time) && !c.completed).length,
-            meetups: contacts.filter(c => c.category === 'meetup').length
+            meetups: contacts.filter(c => (c.category || 'new') === 'meetup').length
         };
     }
 };

@@ -15,6 +15,29 @@ const DateUtils = {
     }
 };
 
+const DateUtils = {
+    getNow() { return new Date(); },
+    getTodayStr() {
+        try {
+            return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        } catch (e) {
+            return new Date().toISOString().split('T')[0];
+        }
+    },
+    toDayStr(isoOrDate) {
+        if (!isoOrDate) return '';
+        try {
+            return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(isoOrDate));
+        } catch (e) {
+            return new Date(isoOrDate).toISOString().split('T')[0];
+        }
+    },
+    isToday(isoOrDate) { return this.toDayStr(isoOrDate) === this.getTodayStr(); },
+    isUpcoming(isoOrDate) {
+        try { return new Date(isoOrDate) >= new Date(); } catch (e) { return false; }
+    }
+};
+
 const UI = {
     CATS: [
         { id: 'new', label: 'New', cls: 'pill-new' },
@@ -24,9 +47,13 @@ const UI = {
         { id: 'completed', label: 'Completed', cls: 'pill-completed' }
     ],
 
-    esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; },
+    esc(s) {
+        if (s === undefined || s === null) return '';
+        const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+    },
 
     pill(cat) {
+        if (!cat) return '';
         const f = this.CATS.find(c => c.id === cat);
         if (f) return `<span class="pill ${f.cls}">${f.label}</span>`;
         const custom = Store.getCategories().find(c => c.id === cat);
@@ -35,7 +62,8 @@ const UI = {
     },
 
     contactCard(c, role) {
-        const tags = c.tags.map(t => `<span class="tag">${this.esc(t)}</span>`).join('');
+        if (!c) return '';
+        const tags = (c.tags || []).map(t => `<span class="tag">${this.esc(t)}</span>`).join('');
         return `
         <div class="card" data-id="${c.id}">
             <div class="card-header">
@@ -56,11 +84,16 @@ const UI = {
     },
 
     callCard(c, role) {
-        const dt = new Date(c.time);
-        const time = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
-        const date = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ });
-        const isPast = dt < new Date();
-        const tags = c.tags.map(t => `<span class="tag">${this.esc(t)}</span>`).join('');
+        if (!c) return '';
+        let time = '??:??', date = '??:??';
+        try {
+            const dt = new Date(c.time);
+            time = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+            date = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ });
+        } catch (e) { console.warn('Invalid date in callCard:', c.time); }
+
+        const isPast = new Date(c.time) < new Date();
+        const tags = (c.tags || []).map(t => `<span class="tag">${this.esc(t)}</span>`).join('');
         return `
         <div class="card ${c.completed ? 'completed-card' : ''}" data-id="${c.id}">
             <div class="card-header">
