@@ -1,5 +1,8 @@
 // Vercel Serverless Function - Telegram Notifications
-const BOT_TOKEN = '8750517154:AAG178QYlyBOkYGs5ODngFLMrxEc7lr6VdE';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN; // Set this in Vercel Environment Variables
+if (!BOT_TOKEN) {
+    console.error('TELEGRAM_BOT_TOKEN is missing!');
+}
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 export default async function handler(req, res) {
