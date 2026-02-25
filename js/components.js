@@ -1,5 +1,20 @@
 /* ImsgDesk - UI Components */
 const TZ = 'America/New_York';
+const DateUtils = {
+    getNow() { return new Date(); },
+    getTodayStr() {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    },
+    toDayStr(isoOrDate) {
+        if (!isoOrDate) return '';
+        return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(isoOrDate));
+    },
+    isToday(isoOrDate) { return this.toDayStr(isoOrDate) === this.getTodayStr(); },
+    isUpcoming(isoOrDate) {
+        return new Date(isoOrDate) >= new Date();
+    }
+};
+
 const UI = {
     CATS: [
         { id: 'new', label: 'New', cls: 'pill-new' },

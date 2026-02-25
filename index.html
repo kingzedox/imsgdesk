@@ -110,20 +110,23 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
     <script>
-        firebase.initializeApp({
+        const config = {
             apiKey: "AIzaSyAi23IsVj_uvoAlTZZQ5uT_iQLYP1SpWMs",
             authDomain: "imsgdesk.firebaseapp.com",
-            databaseURL: "https://imsgdesk-default-rtdb.firebaseio.com",
+            databaseURL: "https://imsgdesk-default-rtdb.firebaseio.com/", // Updated!
             projectId: "imsgdesk",
             storageBucket: "imsgdesk.firebasestorage.app",
             messagingSenderId: "1055040604619",
-            appId: "1:1055040604619:web:a7ed1237c4329c28a1ce4e"
-        });
+            appId: "1:1055040604619:web:a7ed1237c4329c28a1ce4e",
+            measurementId: "G-0M48XCQZT6"
+        };
+        firebase.initializeApp(config);
+        console.log('Firebase initialized with URL:', config.databaseURL);
     </script>
 
+    <script src="js/components.js"></script>
     <script src="js/store.js"></script>
     <script src="js/notifications.js"></script>
-    <script src="js/components.js"></script>
     <script src="js/va.js"></script>
     <script src="js/client.js"></script>
     <script src="js/app.js"></script>

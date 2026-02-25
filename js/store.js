@@ -4,7 +4,15 @@ const Store = {
     _listeners: [],
 
     init() {
+        // Connection indicator
+        firebase.database().ref('.info/connected').on('value', snap => {
+            const isConnected = snap.val() === true;
+            console.log('Firebase connection state:', isConnected ? 'CONNECTED ✅' : 'DISCONNECTED ❌');
+            App.setSyncStatus(isConnected);
+        });
+
         firebase.database().ref('data').on('value', snap => {
+            console.log('Firebase: Received data update');
             const val = snap.val() || {};
             this._data = {
                 contacts: val.contacts || {},
@@ -24,7 +32,10 @@ const Store = {
     addContact(c) {
         const id = this._id();
         const entry = { id, name: c.name, number: c.number || '', category: c.category || 'new', tags: c.tags || [], notes: c.notes || '', clientNotes: '', createdBy: c.createdBy || 'va', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-        firebase.database().ref('data/contacts/' + id).set(entry);
+        console.log('Firebase: Adding contact...', entry);
+        firebase.database().ref('data/contacts/' + id).set(entry)
+            .then(() => console.log('Firebase: Contact added successfully'))
+            .catch(err => console.error('Firebase Error (addContact):', err));
         this.logActivity(`Added contact "${entry.name}"`, entry.createdBy);
         return entry;
     },
@@ -33,7 +44,10 @@ const Store = {
         const c = this._data.contacts[id];
         if (!c) return null;
         const updated = Object.assign({}, c, updates, { updatedAt: new Date().toISOString() });
-        firebase.database().ref('data/contacts/' + id).set(updated);
+        console.log('Firebase: Updating contact...', id, updates);
+        firebase.database().ref('data/contacts/' + id).set(updated)
+            .then(() => console.log('Firebase: Contact updated successfully'))
+            .catch(err => console.error('Firebase Error (updateContact):', err));
         this.logActivity(`Updated contact "${updated.name}"`, updates.updatedBy || 'va');
         return updated;
     },
@@ -41,7 +55,8 @@ const Store = {
     deleteContact(id) {
         const c = this._data.contacts[id];
         if (c) {
-            firebase.database().ref('data/contacts/' + id).remove();
+            firebase.database().ref('data/contacts/' + id).remove()
+                .catch(err => console.error('Firebase Error (deleteContact):', err));
             this.logActivity(`Deleted contact "${c.name}"`, 'va');
         }
     },
@@ -62,7 +77,10 @@ const Store = {
     addCall(c) {
         const id = this._id();
         const entry = { id, name: c.name, number: c.number || '', time: c.time, type: c.type || 'call', note: c.note || '', completed: false, tags: c.tags || [], clientNotes: '', createdBy: c.createdBy || 'va', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), notified20: false };
-        firebase.database().ref('data/calls/' + id).set(entry);
+        console.log('Firebase: Adding call...', entry);
+        firebase.database().ref('data/calls/' + id).set(entry)
+            .then(() => console.log('Firebase: Call added successfully'))
+            .catch(err => console.error('Firebase Error (addCall):', err));
         this.logActivity(`Scheduled ${entry.type} with "${entry.name}"`, entry.createdBy);
         return entry;
     },
@@ -72,7 +90,10 @@ const Store = {
         if (!c) return null;
         const wasCompleted = c.completed;
         const updated = Object.assign({}, c, updates, { updatedAt: new Date().toISOString() });
-        firebase.database().ref('data/calls/' + id).set(updated);
+        console.log('Firebase: Updating call...', id, updates);
+        firebase.database().ref('data/calls/' + id).set(updated)
+            .then(() => console.log('Firebase: Call updated successfully'))
+            .catch(err => console.error('Firebase Error (updateCall):', err));
         if (!wasCompleted && updates.completed) this.logActivity(`Completed ${c.type} with "${c.name}"`, updates.updatedBy || 'client');
         else if (!updates.notified20) this.logActivity(`Updated ${c.type} with "${c.name}"`, updates.updatedBy || 'va');
         return updated;
@@ -81,7 +102,8 @@ const Store = {
     deleteCall(id) {
         const c = this._data.calls[id];
         if (c) {
-            firebase.database().ref('data/calls/' + id).remove();
+            firebase.database().ref('data/calls/' + id).remove()
+                .catch(err => console.error('Firebase Error (deleteCall):', err));
             this.logActivity(`Deleted ${c.type} with "${c.name}"`, 'va');
         }
     },
@@ -90,8 +112,8 @@ const Store = {
         let list = this._arr(this._data.calls);
         list.sort((a, b) => new Date(a.time) - new Date(b.time));
         if (filter) {
-            if (filter.today) { const t = new Date().toDateString(); list = list.filter(c => new Date(c.time).toDateString() === t); }
-            if (filter.upcoming) { const now = new Date(); list = list.filter(c => new Date(c.time) >= now && !c.completed); }
+            if (filter.today) list = list.filter(c => DateUtils.isToday(c.time));
+            if (filter.upcoming) list = list.filter(c => DateUtils.isUpcoming(c.time) && !c.completed);
             if (filter.type) list = list.filter(c => c.type === filter.type);
             if (filter.completed !== undefined) list = list.filter(c => c.completed === filter.completed);
         }
@@ -135,14 +157,13 @@ const Store = {
     getStats() {
         const contacts = this._arr(this._data.contacts);
         const calls = this._arr(this._data.calls);
-        const today = new Date().toDateString();
-        const todayCalls = calls.filter(c => new Date(c.time).toDateString() === today);
+        const todayCalls = calls.filter(c => DateUtils.isToday(c.time));
         return {
             totalContacts: contacts.length,
             newContacts: contacts.filter(c => c.category === 'new').length,
             todayCalls: todayCalls.length,
             completedToday: todayCalls.filter(c => c.completed).length,
-            upcomingCalls: calls.filter(c => new Date(c.time) >= new Date() && !c.completed).length,
+            upcomingCalls: calls.filter(c => DateUtils.isUpcoming(c.time) && !c.completed).length,
             meetups: contacts.filter(c => c.category === 'meetup').length
         };
     }

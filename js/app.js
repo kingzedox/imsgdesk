@@ -86,27 +86,49 @@ const App = {
         document.getElementById('dashboard-view').classList.add('active');
         const session = JSON.parse(localStorage.getItem('imsgdesk_session'));
         document.getElementById('header-greeting').textContent = `Hey, ${session.name}! 👋`;
-        document.getElementById('header-subtitle').textContent = this.role === 'va' ? 'Virtual Assistant Dashboard' : 'Client Dashboard';
+        document.getElementById('header-subtitle').innerHTML = `${this.role === 'va' ? 'Virtual Assistant Dashboard' : 'Client Dashboard'} <span id="sync-status" class="sync-dot red"></span>`;
         this.render();
     },
 
-    render() {
-        const dash = this.role === 'va' ? VA : Client;
-        document.getElementById('tabs').innerHTML = dash.renderTabs();
-        document.getElementById('content').innerHTML = dash.renderContent();
-        document.getElementById('summary-cards').innerHTML = UI.summaryCards(Store.getStats());
+    setSyncStatus(active) {
+        const dot = document.getElementById('sync-status');
+        if (dot) {
+            dot.className = `sync-dot ${active ? 'green' : 'red'}`;
+            dot.title = active ? 'Synced with live database' : 'Connecting to database...';
+        }
+    },
 
-        // Attach search listener
-        const searchEl = document.getElementById('contact-search');
-        if (searchEl) {
-            searchEl.value = dash.searchTerm || '';
-            searchEl.addEventListener('input', e => {
-                dash.searchTerm = e.target.value;
-                document.getElementById('content').innerHTML = dash.renderContent();
-                // Re-attach search without re-rendering everything
-                const newSearch = document.getElementById('contact-search');
-                if (newSearch) { newSearch.value = dash.searchTerm; newSearch.focus(); }
-            });
+    render() {
+        try {
+            console.log('App: Rendering...', { role: this.role });
+            const dash = this.role === 'va' ? VA : Client;
+            if (!dash) throw new Error('No dashboard for role: ' + this.role);
+
+            document.getElementById('tabs').innerHTML = dash.renderTabs();
+            document.getElementById('content').innerHTML = dash.renderContent();
+
+            const stats = Store.getStats();
+            console.log('App: Stats update:', stats);
+            document.getElementById('summary-cards').innerHTML = UI.summaryCards(stats);
+
+            // Attach search listener
+            const searchEl = document.getElementById('contact-search');
+            if (searchEl) {
+                searchEl.value = dash.searchTerm || '';
+                searchEl.addEventListener('input', e => {
+                    dash.searchTerm = e.target.value;
+                    try {
+                        document.getElementById('content').innerHTML = dash.renderContent();
+                        const newSearch = document.getElementById('contact-search');
+                        if (newSearch) { newSearch.value = dash.searchTerm; newSearch.focus(); }
+                    } catch (e) {
+                        console.error('Search render error:', e);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('App Render Error:', e);
+            document.getElementById('content').innerHTML = `<div class="empty-state"><p>Something went wrong during render: ${e.message}</p><button class="btn btn-sm btn-ghost" onclick="location.reload()">Reload App</button></div>`;
         }
     },
 
